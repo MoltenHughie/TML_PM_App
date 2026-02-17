@@ -1,78 +1,63 @@
 <script lang="ts">
-	type Card = { id: string; title: string; tags?: string[] };
-	type Column = { id: string; title: string; cards: Card[] };
+	import { enhance } from '$app/forms';
+	import type { PageData } from './$types';
 
-	let columns: Column[] = [
-		{
-			id: 'ideas',
-			title: 'Ideas',
-			cards: [
-				{ id: 'c1', title: 'Video: "10-min deadlift warmup that actually works"', tags: ['fitness'] },
-				{ id: 'c2', title: 'Short: "One bug that cost me 3 hours (SvelteKit)"', tags: ['tech'] }
-			]
-		},
-		{
-			id: 'script',
-			title: 'Script',
-			cards: [{ id: 'c3', title: 'TML Episode 001 intro script pass v2', tags: ['writing'] }]
-		},
-		{
-			id: 'filming',
-			title: 'Filming',
-			cards: []
-		},
-		{
-			id: 'editing',
-			title: 'Editing',
-			cards: [{ id: 'c4', title: 'Create reusable lower-third template', tags: ['design'] }]
-		},
-		{
-			id: 'published',
-			title: 'Published',
-			cards: []
-		}
-	];
+	let { data } = $props<{ data: PageData }>();
 
-	let dragging: { card: Card; fromColumnId: string } | null = null;
+	type Card = { id: string; columnId: string; title: string; tags: string[]; position: number; createdAt: string };
+	type Column = { id: string; title: string; position: number; cards: Card[] };
 
-	function onDragStart(card: Card, fromColumnId: string) {
+	let columns = $derived(data.columns as Column[]);
+	let dragging: { card: Card; fromColumnId: string } | null = $state(null);
+	let addingTo: string | null = $state(null);
+
+	function onDragStart(e: DragEvent, card: Card, fromColumnId: string) {
 		dragging = { card, fromColumnId };
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', card.id);
+		}
 	}
 
 	function allowDrop(e: DragEvent) {
 		e.preventDefault();
 	}
 
-	function onDrop(toColumnId: string) {
-		if (!dragging) return;
-		if (dragging.fromColumnId === toColumnId) return;
+	function onDrop(e: DragEvent, toColumnId: string) {
+		e.preventDefault();
+		if (!dragging || dragging.fromColumnId === toColumnId) {
+			dragging = null;
+			return;
+		}
 
-		const d = dragging;
+		// Submit the move via a hidden form
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/move';
+		form.style.display = 'none';
 
-		columns = columns.map((col) => {
-			if (col.id === d.fromColumnId) {
-				return { ...col, cards: col.cards.filter((c) => c.id !== d.card.id) };
-			}
-			if (col.id === toColumnId) {
-				return { ...col, cards: [d.card, ...col.cards] };
-			}
-			return col;
-		});
+		const fields = { cardId: dragging.card.id, toColumnId, toPosition: '0' };
+		for (const [k, v] of Object.entries(fields)) {
+			const input = document.createElement('input');
+			input.name = k;
+			input.value = v;
+			form.appendChild(input);
+		}
 
+		document.body.appendChild(form);
+		form.submit();
 		dragging = null;
 	}
 </script>
 
 <svelte:head>
-	<title>TML PM — Kanban Prototype</title>
+	<title>TML PM — Kanban</title>
 </svelte:head>
 
 <main>
 	<header>
-		<h1>TML PM — Kanban (prototype)</h1>
-		<p class="sub">
-			Drag cards between columns. Data is in-memory for now (no DB yet).
-		</p>
+		<h1>TML PM — Kanban</h1>
+		<p class="sub">Drag cards between columns. Data persisted in SQLite.</p>
 		<nav class="nav">
 			<a href="/ideas">Idea Capture</a>
 		</nav>
@@ -84,8 +69,8 @@
 				class="col"
 				role="list"
 				aria-label={col.title}
-				on:dragover={allowDrop}
-				on:drop={() => onDrop(col.id)}
+				ondragover={allowDrop}
+				ondrop={(e) => onDrop(e, col.id)}
 			>
 				<div class="colHeader">
 					<h2>{col.title}</h2>
@@ -98,9 +83,15 @@
 							class="card"
 							role="listitem"
 							draggable="true"
-							on:dragstart={() => onDragStart(card, col.id)}
+							ondragstart={(e) => onDragStart(e, card, col.id)}
 						>
-							<div class="title">{card.title}</div>
+							<div class="cardTop">
+								<div class="title">{card.title}</div>
+								<form method="POST" action="?/delete" use:enhance>
+									<input type="hidden" name="cardId" value={card.id} />
+									<button type="submit" class="deleteBtn" title="Delete card">×</button>
+								</form>
+							</div>
 							{#if card.tags?.length}
 								<div class="tags">
 									{#each card.tags as t}
@@ -111,15 +102,34 @@
 						</div>
 					{/each}
 				</div>
+
+				{#if addingTo === col.id}
+					<form method="POST" action="?/create" class="addForm" use:enhance={() => {
+						return async ({ update }) => {
+							addingTo = null;
+							await update();
+						};
+					}}>
+						<input type="hidden" name="columnId" value={col.id} />
+						<input
+							name="title"
+							placeholder="Card title…"
+							required
+							autocomplete="off"
+							class="addInput"
+						/>
+						<input name="tags" placeholder="Tags (comma-separated)" class="addInput tagInput" />
+						<div class="addActions">
+							<button type="submit">Add</button>
+							<button type="button" class="secondary" onclick={() => (addingTo = null)}>Cancel</button>
+						</div>
+					</form>
+				{:else}
+					<button class="addBtn" onclick={() => (addingTo = col.id)}>+ Add card</button>
+				{/if}
 			</div>
 		{/each}
 	</section>
-
-	<footer>
-		<p>
-			Next step: persist columns/cards with Drizzle + SQLite and add quick “capture idea” input.
-		</p>
-	</footer>
 </main>
 
 <style>
@@ -130,29 +140,11 @@
 		font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 	}
 
-	header h1 {
-		margin: 0;
-		font-size: 1.6rem;
-	}
-
-	.sub {
-		margin-top: 6px;
-		color: #666;
-	}
-
-	.nav {
-		margin-top: 10px;
-	}
-
-	.nav a {
-		color: #2d3a8c;
-		text-decoration: none;
-		font-weight: 600;
-	}
-
-	.nav a:hover {
-		text-decoration: underline;
-	}
+	header h1 { margin: 0; font-size: 1.6rem; }
+	.sub { margin-top: 6px; color: #666; }
+	.nav { margin-top: 10px; }
+	.nav a { color: #2d3a8c; text-decoration: none; font-weight: 600; }
+	.nav a:hover { text-decoration: underline; }
 
 	.board {
 		display: grid;
@@ -169,6 +161,8 @@
 		border-radius: 12px;
 		padding: 10px;
 		min-height: 360px;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.colHeader {
@@ -180,10 +174,7 @@
 		border-bottom: 1px solid #e3e6ea;
 	}
 
-	.colHeader h2 {
-		margin: 0;
-		font-size: 1rem;
-	}
+	.colHeader h2 { margin: 0; font-size: 1rem; }
 
 	.count {
 		font-size: 0.85rem;
@@ -198,6 +189,7 @@
 		padding: 10px 4px 4px;
 		display: grid;
 		gap: 10px;
+		flex: 1;
 	}
 
 	.card {
@@ -209,22 +201,29 @@
 		box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
 	}
 
-	.card:active {
-		cursor: grabbing;
-	}
+	.card:active { cursor: grabbing; }
 
-	.title {
-		font-weight: 600;
-		font-size: 0.95rem;
-		line-height: 1.2;
-	}
-
-	.tags {
-		margin-top: 8px;
+	.cardTop {
 		display: flex;
-		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: flex-start;
 		gap: 6px;
 	}
+
+	.title { font-weight: 600; font-size: 0.95rem; line-height: 1.2; }
+
+	.deleteBtn {
+		background: none;
+		border: none;
+		color: #999;
+		font-size: 1.1rem;
+		cursor: pointer;
+		padding: 0 4px;
+		line-height: 1;
+	}
+	.deleteBtn:hover { color: #b42318; }
+
+	.tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
 
 	.tag {
 		font-size: 0.75rem;
@@ -235,8 +234,55 @@
 		color: #2d3a8c;
 	}
 
-	footer {
-		margin-top: 16px;
+	.addBtn {
+		margin-top: 8px;
+		background: none;
+		border: 1px dashed #ccc;
+		border-radius: 8px;
+		padding: 8px;
 		color: #666;
+		cursor: pointer;
+		font: inherit;
+		width: 100%;
+	}
+	.addBtn:hover { border-color: #2d3a8c; color: #2d3a8c; }
+
+	.addForm {
+		margin-top: 8px;
+		display: grid;
+		gap: 6px;
+	}
+
+	.addInput {
+		width: 100%;
+		padding: 8px 10px;
+		border: 1px solid #d9dde3;
+		border-radius: 8px;
+		font: inherit;
+		font-size: 0.9rem;
+	}
+
+	.tagInput { font-size: 0.85rem; }
+
+	.addActions { display: flex; gap: 6px; }
+
+	button {
+		border: 1px solid #2d3a8c;
+		background: #2d3a8c;
+		color: #fff;
+		padding: 8px 12px;
+		border-radius: 8px;
+		font: inherit;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	button.secondary {
+		background: #fff;
+		color: #2d3a8c;
+	}
+
+	@media (max-width: 520px) {
+		.board { grid-template-columns: 1fr; }
 	}
 </style>
