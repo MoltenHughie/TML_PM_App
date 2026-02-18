@@ -22,3 +22,13 @@ export const kanbanCards = sqliteTable('kanban_cards', {
 	position: integer('position').notNull().default(0),
 	createdAt: text('created_at').notNull()
 });
+
+export const timelineItems = sqliteTable('timeline_items', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	startDate: text('start_date').notNull(), // YYYY-MM-DD
+	endDate: text('end_date').notNull(),     // YYYY-MM-DD
+	color: text('color').default('#3b82f6'),
+	category: text('category'),
+	createdAt: text('created_at').notNull()
+});

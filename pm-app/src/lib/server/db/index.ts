@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 
-import { ideas, kanbanColumns, kanbanCards } from './schema';
+import { ideas, kanbanColumns, kanbanCards, timelineItems } from './schema';
 
 function getDbFilePath(): string {
 	const override = process.env.TML_PM_DB;
@@ -47,6 +47,16 @@ sqlite.exec(`
 		created_at TEXT NOT NULL
 	);
 	CREATE INDEX IF NOT EXISTS kanban_cards_col_idx ON kanban_cards(column_id);
+
+	CREATE TABLE IF NOT EXISTS timeline_items (
+		id TEXT PRIMARY KEY,
+		title TEXT NOT NULL,
+		start_date TEXT NOT NULL,
+		end_date TEXT NOT NULL,
+		color TEXT DEFAULT '#3b82f6',
+		category TEXT,
+		created_at TEXT NOT NULL
+	);
 `);
 
 // Seed default columns if empty
@@ -58,4 +68,4 @@ if (colCount.c === 0) {
 }
 
 export const db = drizzle(sqlite);
-export { ideas, kanbanColumns, kanbanCards };
+export { ideas, kanbanColumns, kanbanCards, timelineItems };

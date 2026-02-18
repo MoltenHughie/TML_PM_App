@@ -26,6 +26,7 @@
 			<h1>Idea Capture</h1>
 			<nav>
 				<a href="/">Kanban</a>
+				<a href="/timeline">Timeline</a>
 			</nav>
 		</div>
 		<p class="sub">Quickly capture ideas, then mark them done when shipped.</p>

@@ -60,6 +60,7 @@
 		<p class="sub">Drag cards between columns. Data persisted in SQLite.</p>
 		<nav class="nav">
 			<a href="/ideas">Idea Capture</a>
+			<a href="/timeline">Timeline</a>
 		</nav>
 	</header>
 
