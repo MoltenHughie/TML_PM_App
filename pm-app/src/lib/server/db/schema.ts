@@ -18,8 +18,17 @@ export const kanbanCards = sqliteTable('kanban_cards', {
 	id: text('id').primaryKey(),
 	columnId: text('column_id').notNull().references(() => kanbanColumns.id),
 	title: text('title').notNull(),
+	description: text('description'),
+	projectId: text('project_id'), // e.g. QA2, TML, MT — null means unassigned
 	tags: text('tags'), // JSON array string
 	position: integer('position').notNull().default(0),
+	createdAt: text('created_at').notNull()
+});
+
+export const projects = sqliteTable('projects', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	color: text('color').notNull().default('#3b82f6'),
 	createdAt: text('created_at').notNull()
 });
 

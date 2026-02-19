@@ -1,9 +1,14 @@
 import type { Actions, PageServerLoad } from './$types';
-import { getAllColumns, createCard, moveCard, deleteCard } from '$lib/server/kanban/repository';
+import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard } from '$lib/server/kanban/repository';
 import { fail } from '@sveltejs/kit';
 
-export const load: PageServerLoad = () => {
-	return { columns: getAllColumns() };
+export const load: PageServerLoad = ({ url }) => {
+	const projectFilter = url.searchParams.get('project') || null;
+	return {
+		columns: getAllColumns(projectFilter),
+		projects: getAllProjects(),
+		projectFilter
+	};
 };
 
 export const actions: Actions = {
@@ -12,13 +17,15 @@ export const actions: Actions = {
 		const columnId = data.get('columnId')?.toString()?.trim();
 		const title = data.get('title')?.toString()?.trim();
 		const tagsRaw = data.get('tags')?.toString()?.trim();
+		const projectId = data.get('projectId')?.toString()?.trim() || undefined;
+		const description = data.get('description')?.toString()?.trim() || undefined;
 
 		if (!columnId || !title) {
 			return fail(400, { error: 'Column and title are required.' });
 		}
 
 		const tags = tagsRaw ? tagsRaw.split(',').map((t) => t.trim()).filter(Boolean) : [];
-		createCard(columnId, title, tags);
+		createCard(columnId, title, tags, projectId, description);
 		return { success: true };
 	},
 

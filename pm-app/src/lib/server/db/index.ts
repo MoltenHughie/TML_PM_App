@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 
-import { ideas, kanbanColumns, kanbanCards, timelineItems } from './schema';
+import { ideas, kanbanColumns, kanbanCards, timelineItems, projects } from './schema';
 
 function getDbFilePath(): string {
 	const override = process.env.TML_PM_DB;
@@ -42,11 +42,21 @@ sqlite.exec(`
 		id TEXT PRIMARY KEY,
 		column_id TEXT NOT NULL REFERENCES kanban_columns(id),
 		title TEXT NOT NULL,
+		description TEXT,
+		project_id TEXT,
 		tags TEXT,
 		position INTEGER NOT NULL DEFAULT 0,
 		created_at TEXT NOT NULL
 	);
 	CREATE INDEX IF NOT EXISTS kanban_cards_col_idx ON kanban_cards(column_id);
+	CREATE INDEX IF NOT EXISTS kanban_cards_project_idx ON kanban_cards(project_id);
+
+	CREATE TABLE IF NOT EXISTS projects (
+		id TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		color TEXT NOT NULL DEFAULT '#3b82f6',
+		created_at TEXT NOT NULL
+	);
 
 	CREATE TABLE IF NOT EXISTS timeline_items (
 		id TEXT PRIMARY KEY,
@@ -62,10 +72,30 @@ sqlite.exec(`
 // Seed default columns if empty
 const colCount = sqlite.prepare('SELECT COUNT(*) as c FROM kanban_columns').get() as { c: number };
 if (colCount.c === 0) {
-	const cols = ['Ideas', 'Script', 'Filming', 'Editing', 'Published'];
+	const cols = ['TODO', 'In Progress', 'Review', 'Done'];
+	const ids = ['todo', 'in_progress', 'review', 'done'];
 	const stmt = sqlite.prepare('INSERT INTO kanban_columns (id, title, position) VALUES (?, ?, ?)');
-	cols.forEach((title, i) => stmt.run(title.toLowerCase(), title, i));
+	cols.forEach((title, i) => stmt.run(ids[i], title, i));
 }
 
+// Seed default projects if empty
+const projCount = sqlite.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number };
+if (projCount.c === 0) {
+	const projs = [
+		{ id: 'QA2', name: 'QuASAr 2.0', color: '#8b5cf6' },
+		{ id: 'TML', name: 'TML', color: '#f59e0b' },
+		{ id: 'MT', name: 'Maintenance', color: '#6b7280' },
+		{ id: 'BBT', name: 'BB Tracker', color: '#10b981' },
+		{ id: 'JOB', name: 'Job Applications', color: '#ef4444' }
+	];
+	const stmt = sqlite.prepare('INSERT INTO projects (id, name, color, created_at) VALUES (?, ?, ?, ?)');
+	const now = new Date().toISOString();
+	projs.forEach((p) => stmt.run(p.id, p.name, p.color, now));
+}
+
+// Migrate: add columns if missing (for existing DBs)
+try { sqlite.exec('ALTER TABLE kanban_cards ADD COLUMN description TEXT'); } catch {}
+try { sqlite.exec('ALTER TABLE kanban_cards ADD COLUMN project_id TEXT'); } catch {}
+
 export const db = drizzle(sqlite);
-export { ideas, kanbanColumns, kanbanCards, timelineItems };
+export { ideas, kanbanColumns, kanbanCards, timelineItems, projects };
