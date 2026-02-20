@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import SprintFocus from '$lib/components/SprintFocus.svelte';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
+	let sprint = $derived(data.sprint ?? null);
+	let activeProjectName = $derived(
+		sprint?.project_id
+			? (data.projects as { id: string; name: string }[]).find((p) => p.id === sprint!.project_id)?.name ?? sprint!.project_id
+			: ''
+	);
 
 	type Card = { id: string; columnId: string; title: string; description: string | null; projectId: string | null; tags: string[]; position: number; createdAt: string };
 	type Column = { id: string; title: string; position: number; cards: Card[] };
@@ -93,6 +100,8 @@
 			</button>
 		{/each}
 	</div>
+
+	<SprintFocus {sprint} projectName={activeProjectName} />
 
 	<section class="board">
 		{#each columns as col (col.id)}

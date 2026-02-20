@@ -1,13 +1,32 @@
 import type { Actions, PageServerLoad } from './$types';
 import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard } from '$lib/server/kanban/repository';
 import { fail } from '@sveltejs/kit';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-export const load: PageServerLoad = ({ url }) => {
+async function loadActiveSprint(projectFilter: string | null) {
+	const today = new Date().toISOString().slice(0, 10);
+	try {
+		const raw = await readFile(join(homedir(), 'clawd', 'memory', 'sprints', `${today}.json`), 'utf-8');
+		const dayFile = JSON.parse(raw);
+		const sprints: any[] = dayFile.sprints ?? [];
+		return projectFilter
+			? sprints.find((s: any) => s.project_id === projectFilter) ?? sprints[0] ?? null
+			: sprints[0] ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export const load: PageServerLoad = async ({ url }) => {
 	const projectFilter = url.searchParams.get('project') || null;
+	const sprint = await loadActiveSprint(projectFilter);
 	return {
 		columns: getAllColumns(projectFilter),
 		projects: getAllProjects(),
-		projectFilter
+		projectFilter,
+		sprint
 	};
 };
 
