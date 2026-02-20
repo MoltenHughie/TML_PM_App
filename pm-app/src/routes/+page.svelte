@@ -18,7 +18,8 @@
 
 	let columns = $derived(data.columns as Column[]);
 	let projects = $derived(data.projects as Project[]);
-	let projectFilter = $derived(data.projectFilter as string | null);
+	let selectedProjects = $derived(data.selectedProjects as string[] | undefined, (ids) => ids ?? []);
+	let selectedProjectsSet = $derived(selectedProjects, (ids) => new Set(ids));
 	let dragging: { card: Card; fromColumnId: string } | null = $state(null);
 	let addingTo: string | null = $state(null);
 
@@ -32,12 +33,29 @@
 		return projects.find((p) => p.id === pid)?.name ?? pid;
 	}
 
-	function setFilter(pid: string | null) {
-		if (pid) {
-			goto(`?project=${pid}`, { replaceState: true });
+	function buildProjectQuery(ids: string[]) {
+		if (!ids.length) return '/';
+		const params = new URLSearchParams();
+		ids.forEach((id) => params.append('project', id));
+		return `?${params.toString()}`;
+	}
+
+	function updateProjectSelection(ids: string[]) {
+		goto(buildProjectQuery(ids), { replaceState: true });
+	}
+
+	function toggleProject(pid: string) {
+		const current = new Set($selectedProjects);
+		if (current.has(pid)) {
+			current.delete(pid);
 		} else {
-			goto('/', { replaceState: true });
+			current.add(pid);
 		}
+		updateProjectSelection(Array.from(current));
+	}
+
+	function showAllProjects() {
+		updateProjectSelection([]);
 	}
 
 	function onDragStart(e: DragEvent, card: Card, fromColumnId: string) {
@@ -87,12 +105,13 @@
 	</header>
 
 	<div class="filters">
-		<button class="filterBtn" class:active={!projectFilter} onclick={() => setFilter(null)}>All</button>
+		<button class="filterBtn" class:active={$selectedProjects.length === 0} type="button" on:click={showAllProjects}>All</button>
 		{#each projects as proj (proj.id)}
 			<button
-				class="filterBtn"
-				class:active={projectFilter === proj.id}
-				onclick={() => setFilter(proj.id)}
+				type="button"
+				class="filterBtn multi"
+				class:active={$selectedProjectsSet.has(proj.id)}
+				on:click={() => toggleProject(proj.id)}
 				style="--proj-color: {proj.color}"
 			>
 				<span class="dot" style="background: {proj.color}"></span>
@@ -221,7 +240,18 @@
 	.filterBtn.active { background: #2d3a8c; color: #fff; border-color: #2d3a8c; }
 	.filterBtn.active .dot { border: 1px solid #fff; }
 
-	.dot {
+	.dot {	.filterBtn.multi {
+		min-width: 120px;
+		justify-content: flex-start;
+	}
+
+	.filterBtn.multi.active {
+		background: #e0e7ff;
+		color: #1e1b4b;
+		border-color: #c7d2fe;
+	}
+
+
 		width: 10px;
 		height: 10px;
 		border-radius: 50%;

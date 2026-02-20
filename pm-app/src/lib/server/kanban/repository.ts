@@ -43,12 +43,13 @@ export function getAllProjects(): Project[] {
 		.all();
 }
 
-export function getAllColumns(filterProjectId?: string | null): KanbanColumn[] {
+export function getAllColumns(filterProjectIds?: string[] | null): KanbanColumn[] {
 	const cols = db.select().from(kanbanColumns).orderBy(asc(kanbanColumns.position)).all();
 	let cards = db.select().from(kanbanCards).orderBy(asc(kanbanCards.position)).all();
 
-	if (filterProjectId) {
-		cards = cards.filter((c) => c.projectId === filterProjectId);
+	if (filterProjectIds && filterProjectIds.length > 0) {
+		const allowed = new Set(filterProjectIds.filter(Boolean));
+		cards = cards.filter((c) => c.projectId && allowed.has(c.projectId));
 	}
 
 	return cols.map((col) => ({

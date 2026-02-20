@@ -86,3 +86,12 @@ Next steps:
 1. Add drizzle-kit migrations + schema evolution
 2. Add tags/search + “convert idea to kanban card”
 3. Add auth + per-user scoping
+
+## Smoke test — Kanban filters & active sprint panel
+
+1. Start the dev server (`npm run dev`).
+2. Use the multi-project filter chips at the top of the Kanban board to toggle QA2/TML/MT workstreams and confirm the cards update in place.
+3. The Active Sprint panel (top-left) shows the current sprint goal pulled from `~/clawd/memory/sprints/<today>.json` and highlights the next incomplete subtask.
+4. Smoke-test by toggling between QA2, TML, and MT to ensure each sprint goal appears and the next subtask reflects real data.
+
+Document the smoke-test results in `~/clawd/memory/2026-02-20.md`.

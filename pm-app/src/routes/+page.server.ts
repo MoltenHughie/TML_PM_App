@@ -20,12 +20,12 @@ async function loadActiveSprint(projectFilter: string | null) {
 }
 
 export const load: PageServerLoad = async ({ url }) => {
-	const projectFilter = url.searchParams.get('project') || null;
-	const sprint = await loadActiveSprint(projectFilter);
+	const projectFilters = url.searchParams.getAll('project').filter((v) => v && v.trim().length > 0);
+	const sprint = await loadActiveSprint(projectFilters[0] ?? null);
 	return {
-		columns: getAllColumns(projectFilter),
+		columns: getAllColumns(projectFilters),
 		projects: getAllProjects(),
-		projectFilter,
+		selectedProjects: projectFilters,
 		sprint
 	};
 };

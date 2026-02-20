@@ -23,9 +23,13 @@
 	let { sprint = null, projectName = '' }: { sprint: SprintData | null; projectName: string } =
 		$props();
 
-	let doneCount = $derived(sprint?.subtasks.filter((s) => s.status === 'DONE').length ?? 0);
-	let totalCount = $derived(sprint?.subtasks.length ?? 0);
-	let pct = $derived(totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
+	let doneCount = $derived(sprint, (value) => value?.subtasks.filter((s) => s.status === 'DONE').length ?? 0);
+	let totalCount = $derived(sprint, (value) => value?.subtasks.length ?? 0);
+	let pct = $derived(doneCount, totalCount, (done, total) => (total > 0 ? Math.round((done / total) * 100) : 0));
+	let nextSubtask = $derived(sprint, (value) => {
+		const list = value?.subtasks ?? [];
+		return list.find((s) => s.status !== 'DONE') ?? null;
+	});
 
 	function statusIcon(status: string): string {
 		switch (status) {
@@ -56,6 +60,15 @@
 			</div>
 			<span class="sf-pct">{doneCount}/{totalCount} ({pct}%)</span>
 		</div>
+
+		{#if nextSubtask}
+			<div class="sf-next">
+				<strong>Next subtask:</strong>
+				<span>{nextSubtask.title}</span>
+			</div>
+		{:else}
+			<div class="sf-next sf-next-done">All subtasks complete</div>
+		{/if}
 
 		<ul class="sf-tasks">
 			{#each sprint.subtasks as st (st.id)}
@@ -132,6 +145,21 @@
 		white-space: nowrap;
 	}
 
+
+	.sf-next {
+		margin-bottom: 12px;
+		font-size: 0.78rem;
+		color: #1e1b4b;
+	}
+
+	.sf-next strong {
+		font-weight: 600;
+		margin-right: 4px;
+	}
+
+	.sf-next.sf-next-done {
+		color: #4b5563;
+	}
 	.sf-tasks {
 		list-style: none;
 		margin: 0;
