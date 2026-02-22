@@ -95,3 +95,39 @@ Next steps:
 4. Smoke-test by toggling between QA2, TML, and MT to ensure each sprint goal appears and the next subtask reflects real data.
 
 Document the smoke-test results in `~/clawd/memory/2026-02-20.md`.
+
+## Sprint-state API
+
+### Endpoint
+
+`GET /api/sprint-state` returns:
+
+```json
+{
+  "sprint": "SprintData | null",
+  "rotation": "RotationSnapshot | null"
+}
+```
+
+It reads `~/clawd/memory/sprints/state.json` first so it follows `active_sprint`, and falls back to the today file when the state pointer is missing.
+
+Query param:
+- `?project=<PROJECT_ID>`: get that project’s sprint directly.
+
+### SprintData fields (subset)
+
+The returned `sprint` object may include:
+- `last_progress_at` (ISO timestamp)
+- `change_log`: array of `{ timestamp, text }`
+
+The Active Sprint panel surfaces the last progress time and latest change.
+
+### RotationSnapshot fields
+
+The returned `rotation` object contains (derived from clawd memory files):
+- `active_projects: string[]` — active projects sorted by priority (from `PROJECTS.json`)
+- `visited_project_ids: string[]` — projects already visited in the current rotation
+- `active_project_id: string | null`
+- `active_sprint_id: string | null`
+
+This is rendered in the Kanban page via the `RotationStatus` prototype component.

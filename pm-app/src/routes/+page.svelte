@@ -2,10 +2,12 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import SprintFocus from '$lib/components/SprintFocus.svelte';
+	import RotationStatus from '$lib/components/RotationStatus.svelte';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
 	let sprint = $derived(data.sprint ?? null);
+	let rotation = $derived((data as any).rotation ?? null);
 	let activeProjectName = $derived(
 		sprint?.project_id
 			? (data.projects as { id: string; name: string }[]).find((p) => p.id === sprint!.project_id)?.name ?? sprint!.project_id
@@ -18,8 +20,8 @@
 
 	let columns = $derived(data.columns as Column[]);
 	let projects = $derived(data.projects as Project[]);
-	let selectedProjects = $derived(data.selectedProjects as string[] | undefined, (ids) => ids ?? []);
-	let selectedProjectsSet = $derived(selectedProjects, (ids) => new Set(ids));
+	let selectedProjects = $derived(((data.selectedProjects as string[] | undefined) ?? []) as string[]);
+	let selectedProjectsSet = $derived(new Set(selectedProjects));
 	let dragging: { card: Card; fromColumnId: string } | null = $state(null);
 	let addingTo: string | null = $state(null);
 
@@ -45,7 +47,7 @@
 	}
 
 	function toggleProject(pid: string) {
-		const current = new Set($selectedProjects);
+		const current = new Set(selectedProjects);
 		if (current.has(pid)) {
 			current.delete(pid);
 		} else {
@@ -105,13 +107,13 @@
 	</header>
 
 	<div class="filters">
-		<button class="filterBtn" class:active={$selectedProjects.length === 0} type="button" on:click={showAllProjects}>All</button>
+		<button class="filterBtn" class:active={selectedProjects.length === 0} type="button" onclick={showAllProjects}>All</button>
 		{#each projects as proj (proj.id)}
 			<button
 				type="button"
 				class="filterBtn multi"
-				class:active={$selectedProjectsSet.has(proj.id)}
-				on:click={() => toggleProject(proj.id)}
+				class:active={selectedProjectsSet.has(proj.id)}
+				onclick={() => toggleProject(proj.id)}
 				style="--proj-color: {proj.color}"
 			>
 				<span class="dot" style="background: {proj.color}"></span>
@@ -120,6 +122,7 @@
 		{/each}
 	</div>
 
+	<RotationStatus {rotation} />
 	<SprintFocus {sprint} projectName={activeProjectName} />
 
 	<section class="board">

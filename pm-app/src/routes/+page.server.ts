@@ -1,32 +1,32 @@
 import type { Actions, PageServerLoad } from './$types';
 import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard } from '$lib/server/kanban/repository';
 import { fail } from '@sveltejs/kit';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 
-async function loadActiveSprint(projectFilter: string | null) {
-	const today = new Date().toISOString().slice(0, 10);
+async function loadSprintAndRotation(
+	fetchFn: typeof fetch,
+	projectFilter: string | null
+) {
 	try {
-		const raw = await readFile(join(homedir(), 'clawd', 'memory', 'sprints', `${today}.json`), 'utf-8');
-		const dayFile = JSON.parse(raw);
-		const sprints: any[] = dayFile.sprints ?? [];
-		return projectFilter
-			? sprints.find((s: any) => s.project_id === projectFilter) ?? sprints[0] ?? null
-			: sprints[0] ?? null;
+		// Reuse the server endpoint so the page stays aligned with the live
+		// active_sprint pointer and the hourly rotation tracker.
+		const qs = projectFilter ? `?project=${encodeURIComponent(projectFilter)}` : '';
+		const res = await fetchFn(`/api/sprint-state${qs}`);
+		if (!res.ok) return { sprint: null, rotation: null };
+		return (await res.json()) as { sprint: any; rotation: any };
 	} catch {
-		return null;
+		return { sprint: null, rotation: null };
 	}
 }
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, fetch }) => {
 	const projectFilters = url.searchParams.getAll('project').filter((v) => v && v.trim().length > 0);
-	const sprint = await loadActiveSprint(projectFilters[0] ?? null);
+	const { sprint, rotation } = await loadSprintAndRotation(fetch, projectFilters[0] ?? null);
 	return {
 		columns: getAllColumns(projectFilters),
 		projects: getAllProjects(),
 		selectedProjects: projectFilters,
-		sprint
+		sprint,
+		rotation
 	};
 };
 

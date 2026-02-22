@@ -12,24 +12,45 @@
 		status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'SKIPPED';
 	};
 
+	type ChangeLogEntry = {
+		timestamp: string;
+		text: string;
+	};
+
 	type SprintData = {
 		sprint_id: string;
 		project_id: string;
 		goal: string;
 		status: string;
 		subtasks: Subtask[];
+		last_progress_at?: string | null;
+		change_log?: ChangeLogEntry[];
 	};
 
 	let { sprint = null, projectName = '' }: { sprint: SprintData | null; projectName: string } =
 		$props();
 
-	let doneCount = $derived(sprint, (value) => value?.subtasks.filter((s) => s.status === 'DONE').length ?? 0);
-	let totalCount = $derived(sprint, (value) => value?.subtasks.length ?? 0);
-	let pct = $derived(doneCount, totalCount, (done, total) => (total > 0 ? Math.round((done / total) * 100) : 0));
-	let nextSubtask = $derived(sprint, (value) => {
-		const list = value?.subtasks ?? [];
-		return list.find((s) => s.status !== 'DONE') ?? null;
-	});
+	let doneCount = $derived(sprint?.subtasks.filter((s) => s.status === 'DONE').length ?? 0);
+	let totalCount = $derived(sprint?.subtasks.length ?? 0);
+	let pct = $derived(totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0);
+	let nextSubtask = $derived((sprint?.subtasks.find((s) => s.status !== 'DONE') ?? null) as Subtask | null);
+
+	let lastProgressLabel = $derived((() => {
+		const ts = sprint?.last_progress_at;
+		if (!ts) return null;
+		try {
+			const d = new Date(ts);
+			return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		} catch {
+			return ts;
+		}
+	})() as string | null);
+
+	let latestChangeLog = $derived((() => {
+		const log = sprint?.change_log;
+		if (!log || log.length === 0) return null;
+		return log[log.length - 1];
+	})() as ChangeLogEntry | null);
 
 	function statusIcon(status: string): string {
 		switch (status) {
@@ -53,6 +74,12 @@
 		</div>
 
 		<p class="sf-goal">{sprint.goal}</p>
+
+		{#if lastProgressLabel}
+			<div class="sf-last-progress">
+				🕐 Last progress: <strong>{lastProgressLabel}</strong>
+			</div>
+		{/if}
 
 		<div class="sf-progress">
 			<div class="sf-bar">
@@ -78,6 +105,16 @@
 				</li>
 			{/each}
 		</ul>
+
+		{#if latestChangeLog}
+			<div class="sf-change">
+				<div class="sf-change-meta">
+					<strong>Latest change</strong>
+					<span>{new Date(latestChangeLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+				</div>
+				<p>{latestChangeLog.text}</p>
+			</div>
+		{/if}
 	</aside>
 {/if}
 
@@ -114,6 +151,12 @@
 		font-size: 0.88rem;
 		color: #374151;
 		line-height: 1.35;
+	}
+
+	.sf-last-progress {
+		font-size: 0.75rem;
+		color: #475467;
+		margin-bottom: 12px;
 	}
 
 	.sf-progress {
@@ -160,6 +203,29 @@
 	.sf-next.sf-next-done {
 		color: #4b5563;
 	}
+
+	.sf-change {
+		background: #f8fafc;
+		border: 1px solid #c7d2fe;
+		border-radius: 10px;
+		padding: 10px;
+		margin-top: 12px;
+	}
+
+	.sf-change-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.75rem;
+		color: #475467;
+		margin-bottom: 4px;
+	}
+
+	.sf-change p {
+		margin: 0;
+		line-height: 1.3;
+	}
+
 	.sf-tasks {
 		list-style: none;
 		margin: 0;
