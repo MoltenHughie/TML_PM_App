@@ -1,0 +1,16 @@
+services:
+  pm-app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # Point this at a mounted clawd folder so /api/sprint-state can read sprint files.
+      # Example host path: /Users/tlittau/clawd
+      - CLAWD_HOME=/home/node/clawd
+    volumes:
+      # SQLite persistence
+      - ./.data:/app/.data
+      # Read-only mount of clawd state
+      - ${CLAWD_HOME:-/Users/tlittau/clawd}:/home/node/clawd:ro
+    restart: unless-stopped

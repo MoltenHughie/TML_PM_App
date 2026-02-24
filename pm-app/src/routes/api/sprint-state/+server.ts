@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
+import type { RotationSnapshot } from '$lib/types/rotation';
+
 type ProjectRow = {
 	project_id: string;
 	status: string;
@@ -11,9 +13,9 @@ type ProjectRow = {
 
 export async function GET({ url }) {
 	const projectId = url.searchParams.get('project');
-	const home = homedir();
-	const sprintDir = join(home, 'clawd', 'memory', 'sprints');
-	const projectsPath = join(home, 'clawd', 'memory', 'projects', 'PROJECTS.json');
+	const clawdHome = process.env.CLAWD_HOME ?? join(homedir(), 'clawd');
+	const sprintDir = join(clawdHome, 'memory', 'sprints');
+	const projectsPath = join(clawdHome, 'memory', 'projects', 'PROJECTS.json');
 	const today = new Date().toISOString().slice(0, 10);
 
 	try {
@@ -52,7 +54,7 @@ export async function GET({ url }) {
 			activeProjects = [];
 		}
 
-		const rotation = {
+		const rotation: RotationSnapshot = {
 			active_projects: activeProjects,
 			visited_project_ids: state?.completed_project_ids ?? [],
 			active_project_id: state?.active_project_id ?? null,

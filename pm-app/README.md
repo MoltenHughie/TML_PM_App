@@ -52,9 +52,36 @@ To create a production version of your app:
 npm run build
 ```
 
+Run the production server (adapter-node output):
+
+```sh
+npm run start
+```
+
 You can preview the production build with `npm run preview`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Deployment
+
+See:
+- `DEPLOYMENT.md`
+- `ACCESS_TAILSCALE.md`
+- `ACCESS_TRUENAS_CLOUDFLARE.md`
+
+Docker (local):
+
+```sh
+docker compose up --build
+```
+
+For sprint/rotation UI: set `CLAWD_HOME` (or mount clawd to `/home/node/clawd` in the container) so `/api/sprint-state` can read sprint files.
+
+## Smoke-test checklist (prod-ish)
+1. `npm run build` and `PORT=3000 CLAWD_HOME=... npm run start`
+2. Open `/` and confirm Kanban + Active Sprint + RotationStatus render
+3. Hit `/api/sprint-state` and confirm it returns non-null rotation + sprint data
+4. Trigger/await an autopilot run and confirm the rotation visited list updates:
+   - check `~/clawd/memory/sprints/state.json` shows `completed_project_ids` appended with the just-visited project
+   - refresh `/` and confirm the RotationStatus “Visited” list matches that file
 
 ## Developer note — Idea Capture (DB-backed)
 

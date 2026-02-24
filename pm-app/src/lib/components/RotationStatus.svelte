@@ -4,14 +4,9 @@
 	 * Prototype component.
 	 */
 
-	type Rotation = {
-		active_projects: string[];
-		visited_project_ids: string[];
-		active_project_id: string | null;
-		active_sprint_id: string | null;
-	};
+	import type { RotationSnapshot } from '$lib/types/rotation';
 
-	let { rotation = null }: { rotation: Rotation | null } = $props();
+	let { rotation = null }: { rotation: RotationSnapshot | null } = $props();
 
 	function pillClass(pid: string): string {
 		const visited = rotation?.visited_project_ids?.includes(pid);
@@ -21,6 +16,8 @@
 </script>
 
 {#if rotation}
+	{@const visited = rotation.visited_project_ids ?? []}
+	{@const active = rotation.active_projects ?? []}
 	<aside class="rot">
 		<div class="rot-head">
 			<h3>🔁 Rotation</h3>
@@ -30,14 +27,14 @@
 		</div>
 
 		<div class="rot-pills" aria-label="Active projects rotation snapshot">
-			{#each rotation.active_projects as pid (pid)}
+			{#each active as pid (pid)}
 				<span class={pillClass(pid)}>{pid}</span>
 			{/each}
 		</div>
 
 		<div class="rot-meta">
-			<span>Visited: <strong>{rotation.visited_project_ids.length}</strong> / {rotation.active_projects.length}</span>
-			<span class="muted">(visited list: {rotation.visited_project_ids.join(', ') || '—'})</span>
+			<span>Visited: <strong>{visited.length}</strong> / {active.length}</span>
+			<span class="muted">(visited list: {visited.join(', ') || '—'})</span>
 		</div>
 	</aside>
 {/if}
