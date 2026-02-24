@@ -45,11 +45,28 @@ Provide a simple way to run the PM App for personal use, with access either:
 - Cloudflare Tunnel adds an Internet-facing entrypoint; must be locked down.
 
 ## Data persistence notes (important)
-The PM App reads from `~/clawd/memory/sprints/*.json` today for sprint focus/rotation. For a server deployment, we need an explicit strategy:
-- Either mount the `clawd/memory/` directory into the container/host path expected by the app, or
-- Make the pm-app configurable via environment variables (preferred long-term):
-  - `CLAWD_HOME=/path/to/clawd`
-  - or specific paths like `CLAWD_SPRINT_DIR`, `CLAWD_PROJECTS_PATH`.
+The PM App reads from clawd memory files for sprint focus/rotation and now also exposes a **sync API**.
+
+### clawd file access (required)
+The server must be able to read:
+- `${CLAWD_HOME}/memory/sprints/state.json`
+- `${CLAWD_HOME}/memory/sprints/YYYY-MM-DD.json`
+- `${CLAWD_HOME}/memory/projects/PROJECTS.json`
+
+Configure via environment variable:
+- `CLAWD_HOME=/path/to/clawd` (defaults to `~/clawd`)
+
+In Docker/TrueNAS, mount your `clawd` folder into the container and set `CLAWD_HOME` accordingly.
+
+### Sync API (optional)
+Read-only endpoints:
+- `GET /api/sync/v1/meta`
+- `GET /api/sync/v1/projects`
+- `GET /api/sync/v1/sprints`
+
+Auth:
+- If `PM_SYNC_TOKEN` is **unset**, endpoints are open (intended for Tailscale-only deployments).
+- If `PM_SYNC_TOKEN` is **set**, clients must send header `x-pm-sync-token: <token>`.
 
 ## Next implementation steps
 - Add production deploy artifacts:
