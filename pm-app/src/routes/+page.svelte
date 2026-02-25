@@ -125,6 +125,9 @@
 
 	<RotationStatus {rotation} />
 	<SyncStatus />
+	<p class="miniLinks">
+		<a href="/sync">Sync Explorer →</a>
+	</p>
 	<SprintFocus {sprint} projectName={activeProjectName} />
 
 	<section class="board">
