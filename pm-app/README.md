@@ -158,3 +158,51 @@ The returned `rotation` object contains (derived from clawd memory files):
 - `active_sprint_id: string | null`
 
 This is rendered in the Kanban page via the `RotationStatus` prototype component.
+
+---
+
+## Sync API (read-only)
+
+The PM app exposes a small read-only JSON API intended for **agent/local pulls**.
+
+### Endpoints
+
+- `GET /api/sync/v1/meta`
+- `GET /api/sync/v1/projects`
+- `GET /api/sync/v1/sprints`
+
+Details: see `SYNC_API.md`.
+
+### Auth
+
+Auth is optional:
+- If `PM_SYNC_TOKEN` is **unset/empty**: requests are allowed.
+- If `PM_SYNC_TOKEN` is **set**: clients must send `x-pm-sync-token: <token>`.
+
+### Example curl
+
+```bash
+# no auth (PM_SYNC_TOKEN unset)
+curl -sS http://localhost:3000/api/sync/v1/meta | jq
+
+# token auth
+curl -sS \
+  -H "x-pm-sync-token: $PM_SYNC_TOKEN" \
+  http://localhost:3000/api/sync/v1/projects | jq
+```
+
+### Local pull script (clawd)
+
+A helper script lives in the clawd workspace:
+
+```bash
+python ~/clawd/scripts/pm_app_sync_pull.py \
+  --base-url http://localhost:3000 \
+  --out ~/clawd/memory/pm-app-cache.json
+
+# with auth
+python ~/clawd/scripts/pm_app_sync_pull.py \
+  --base-url https://<your-host> \
+  --token "$PM_SYNC_TOKEN" \
+  --out ~/clawd/memory/pm-app-cache.json
+```
