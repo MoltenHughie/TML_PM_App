@@ -165,6 +165,16 @@ This is rendered in the Kanban page via the `RotationStatus` prototype component
 
 The PM app exposes a small read-only JSON API intended for **agent/local pulls**.
 
+### Debug UI: Sync Explorer
+
+In the UI, visit:
+- `GET /sync`
+
+This page fetches the `/api/sync/v1/*` endpoints and renders the JSON so you can quickly verify responses in a deployment.
+
+Auth note:
+- If `PM_SYNC_TOKEN` is set, `/sync` will also require the same token (because it calls the Sync API).
+
 ### Endpoints
 
 - `GET /api/sync/v1/meta`
