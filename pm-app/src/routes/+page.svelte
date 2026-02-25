@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import SprintFocus from '$lib/components/SprintFocus.svelte';
 	import RotationStatus from '$lib/components/RotationStatus.svelte';
+	import SyncStatus from '$lib/components/SyncStatus.svelte';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
@@ -123,6 +124,7 @@
 	</div>
 
 	<RotationStatus {rotation} />
+	<SyncStatus />
 	<SprintFocus {sprint} projectName={activeProjectName} />
 
 	<section class="board">
