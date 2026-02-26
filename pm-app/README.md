@@ -190,6 +190,10 @@ Auth note:
 
 Details: see `SYNC_API.md`.
 
+### Kanban board snapshot
+
+`GET /api/kanban` returns the current column/card state (tags, project, column positions, and timestamps). This endpoint helps cron jobs and agents mirror the Kanban board locally before any work begins, especially if you plan to add/delete cards directly through the UI. It obeys the same `PM_APP_USERS` guard as the rest of the UI—if `PM_APP_USERS` is set, include an `Authorization: Basic <base64>` header with one of the allowed credentials. Use `scripts/pm_app_board_sync.py` in the main workspace to pull this data into `~/clawd/memory/pm-app-board.json`.
+
 ### Auth
 
 Auth is optional:
