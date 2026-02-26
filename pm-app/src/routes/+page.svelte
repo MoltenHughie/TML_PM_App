@@ -248,7 +248,7 @@
 	.filterBtn.active { background: #2d3a8c; color: #fff; border-color: #2d3a8c; }
 	.filterBtn.active .dot { border: 1px solid #fff; }
 
-	.dot {	.filterBtn.multi {
+	.filterBtn.multi {
 		min-width: 120px;
 		justify-content: flex-start;
 	}
@@ -259,7 +259,7 @@
 		border-color: #c7d2fe;
 	}
 
-
+	.dot {
 		width: 10px;
 		height: 10px;
 		border-radius: 50%;
