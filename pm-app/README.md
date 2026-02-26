@@ -222,3 +222,8 @@ python ~/clawd/scripts/pm_app_sync_pull.py \
   --token "$PM_SYNC_TOKEN" \
   --out ~/clawd/memory/pm-app-cache.json
 ```
+### Kanban board snapshot
+
+`GET /api/kanban` returns the current columns and cards (tags, project assignments, positions, and timestamps). This endpoint is protected by the same `PM_APP_USERS` guard as the rest of the app, so send `Authorization: Basic <base64>` with a configured credential pair (e.g., `clawdia:X0d0XWKhE46WLUNI`).
+
+When the hourly autopilot or the 05:10 planner runs, pull this endpoint via `python ~/clawd/scripts/pm_app_board_sync.py --base-url https://hughiepm.tmlittau.com --auth-user tim --auth-pass <pwd>` so `~/clawd/memory/pm-app-board.json` mirrors the live board before any work happens. The script writes the columns/cards snapshot plus `pulled_at` so automation can detect when the board changed.
