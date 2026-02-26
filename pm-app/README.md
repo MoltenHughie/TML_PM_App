@@ -67,6 +67,12 @@ See:
 - `ACCESS_TAILSCALE.md`
 - `ACCESS_TRUENAS_CLOUDFLARE.md`
 
+## Access control & HTTP auth
+
+When you expose the PM App outside your tailnet (TrueNAS + Cloudflare Tunnel), the container should demand a login for every page and API it serves. To enable Basic HTTP auth, set the `PM_APP_USERS` environment variable to one or more `username:password` pairs separated by newlines, commas, or semicolons (e.g. `tim:secret123;clawdia:secret456`). Once this env var is present, every request must carry an `Authorization: Basic <base64>` header, so both browsers and automation scripts will be challenged for a username/password.
+
+You can keep `PM_APP_USERS` unset during local development for faster iteration, but set it to your chosen credentials on TrueNAS/Cloudflare deployments. Scripts such as `scripts/pm_app_sync_pull.py` now accept `--auth-user`/`--auth-pass` so they can fetch `/api/sync/v1/*` while the app is locked down.
+
 Docker (local):
 
 ```sh
