@@ -8,6 +8,10 @@ services:
       # Point this at a mounted clawd folder so /api/sprint-state can read sprint files.
       # Example host path: /Users/tlittau/clawd
       - CLAWD_HOME=/home/node/clawd
+      # HTTP Basic auth credentials (set to e.g. "tim:…;clawdia:…"). Leave unset for local-dev rapid iteration.
+      - PM_APP_USERS=${PM_APP_USERS:-}
+      # Optional sync-token that clients must send to /api/sync/v1/* (if you want to rotate service access independently)
+      - PM_SYNC_TOKEN=${PM_SYNC_TOKEN:-}
     volumes:
       # SQLite persistence
       - ./.data:/app/.data

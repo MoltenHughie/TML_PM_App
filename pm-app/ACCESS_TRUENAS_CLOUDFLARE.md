@@ -50,6 +50,14 @@ Use Cloudflare Access:
 - Require login to your identity provider (Google/GitHub/etc), or
 - Use a service token for machine access.
 
+Then, lock the PM App itself behind Basic HTTP auth by setting the `PM_APP_USERS` environment variable. Provide newline/comma/semicolon-separated `username:password` pairs so the app challenges every request (UI, API, sync endpoints) with a Basic auth prompt. Example:
+
+```
+PM_APP_USERS="tim:l9YtG2mP8QKL;clawdia:W9xS6v4fZ2kP"
+```
+
+Scripts such as `scripts/pm_app_sync_pull.py` accept `--auth-user`/`--auth-pass` so they can still pull `/api/sync/v1/*` while the container is protected. Set the same credentials in your automation agents, curl commands, or Cloudflare service tokens so offsite access keeps working.
+
 Set Access policies so only your account(s) can reach `pm.yourdomain.com`.
 
 ## 4) Smoke-test checklist
