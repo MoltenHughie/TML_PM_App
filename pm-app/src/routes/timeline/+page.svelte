@@ -173,7 +173,7 @@
 
 	.chartHeader { border-bottom: 1px solid #e3e6ea; }
 	.dateLabel { font-size: 0.75rem; color: #999; white-space: nowrap; padding: 0 2px; }
-	.labelCol { }
+	/* .labelCol intentionally has no extra styling (kept for layout semantics) */
 
 	.chartRow { border-bottom: 1px solid #f0f1f3; }
 	.chartRow:hover { background: #fafbfc; }
