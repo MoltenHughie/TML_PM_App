@@ -3,8 +3,7 @@
     import { goto } from '$app/navigation';
     import SprintFocus from '$lib/components/SprintFocus.svelte';
     import RotationStatus from '$lib/components/RotationStatus.svelte';
-    import SyncStatus from '$lib/components/SyncStatus.svelte';
-    import type { PageData } from './$types';
+        import type { PageData } from './$types';
 
     let { data } = $props<{ data: PageData }>();
     let sprint = $derived(data.sprint ?? null);
@@ -195,10 +194,6 @@
     </div>
 
     <RotationStatus {rotation} />
-    <SyncStatus />
-    <p class="miniLinks">
-        <a href="/sync">Sync Explorer →</a>
-    </p>
     <SprintFocus {sprint} projectName={activeProjectName} />
 
     <section class="board">
@@ -756,16 +751,6 @@
 
     button:hover {
         transform: translateY(-1px);
-    }
-
-    .miniLinks {
-        margin-top: 0.5rem;
-        color: #a5b4fc;
-        font-size: 0.85rem;
-    }
-
-    .miniLinks a {
-        color: inherit;
     }
 
     .muted {
