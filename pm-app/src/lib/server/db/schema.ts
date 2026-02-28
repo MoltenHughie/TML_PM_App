@@ -25,6 +25,15 @@ export const kanbanCards = sqliteTable('kanban_cards', {
 	createdAt: text('created_at').notNull()
 });
 
+export const kanbanCardReviews = sqliteTable('kanban_card_reviews', {
+	id: text('id').primaryKey(),
+	cardId: text('card_id').notNull().references(() => kanbanCards.id),
+	comment: text('comment').notNull(),
+	author: text('author'),
+	type: text('type').notNull().default('review'),
+	createdAt: text('created_at').notNull()
+});
+
 export const projects = sqliteTable('projects', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),

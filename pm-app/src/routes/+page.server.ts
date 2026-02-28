@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
-import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard } from '$lib/server/kanban/repository';
+import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard, addCardReview } from '$lib/server/kanban/repository';
 import { fail } from '@sveltejs/kit';
 
 async function loadSprintAndRotation(
@@ -67,6 +67,21 @@ export const actions: Actions = {
 		const cardId = data.get('cardId')?.toString();
 		if (!cardId) return fail(400, { error: 'Missing cardId.' });
 		deleteCard(cardId);
+		return { success: true };
+	},
+
+	review: async ({ request }) => {
+		const data = await request.formData();
+		const cardId = data.get('cardId')?.toString();
+		const comment = data.get('comment')?.toString()?.trim();
+		const author = data.get('author')?.toString()?.trim();
+		const type = data.get('type')?.toString()?.trim() || 'review';
+
+		if (!cardId || !comment) {
+			return fail(400, { error: 'Card and comment are required.' });
+		}
+
+		addCardReview(cardId, comment, author || undefined, type);
 		return { success: true };
 	}
 };

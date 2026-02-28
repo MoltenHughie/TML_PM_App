@@ -1,6 +1,17 @@
-import { db, kanbanColumns, kanbanCards, projects } from '../db';
+import { db, kanbanColumns, kanbanCards, kanbanCardReviews, projects } from '../db';
 import { eq, asc, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
+
+type KanbanCardRow = typeof kanbanCards.$inferSelect;
+
+export type KanbanCardReview = {
+	id: string;
+	cardId: string;
+	comment: string;
+	author: string | null;
+	type: string;
+	createdAt: string;
+};
 
 export type KanbanCard = {
 	id: string;
@@ -11,7 +22,13 @@ export type KanbanCard = {
 	tags: string[];
 	position: number;
 	createdAt: string;
+	reviews: KanbanCardReview[];
+	reviewCount: number;
+	lastReviewAt: string | null;
+	lastReviewer: string | null;
 };
+
+type KanbanCardBase = Omit<KanbanCard, 'reviews' | 'reviewCount' | 'lastReviewAt' | 'lastReviewer'>;
 
 export type KanbanColumn = {
 	id: string;
@@ -26,14 +43,40 @@ export type Project = {
 	color: string;
 };
 
-function parseCard(row: typeof kanbanCards.$inferSelect): KanbanCard {
+function parseCard(row: KanbanCardRow): KanbanCardBase {
 	let tags: string[] = [];
 	try {
 		tags = row.tags ? JSON.parse(row.tags) : [];
 	} catch {
 		tags = [];
 	}
-	return { ...row, tags };
+	return {
+		...row,
+		tags
+	};
+}
+
+function parseReview(row: typeof kanbanCardReviews.$inferSelect): KanbanCardReview {
+	return {
+		id: row.id,
+		cardId: row.cardId,
+		comment: row.comment,
+		author: row.author ?? null,
+		type: row.type,
+		createdAt: row.createdAt
+	};
+}
+
+function attachReviewData(card: KanbanCardBase, reviewsByCard: Map<string, KanbanCardReview[]>): KanbanCard {
+	const reviews = reviewsByCard.get(card.id) ?? [];
+	const lastReview = reviews.length ? reviews[reviews.length - 1] : null;
+	return {
+		...card,
+		reviews,
+		reviewCount: reviews.length,
+		lastReviewAt: lastReview?.createdAt ?? null,
+		lastReviewer: lastReview?.author ?? null
+	};
 }
 
 export function getAllProjects(): Project[] {
@@ -45,16 +88,29 @@ export function getAllProjects(): Project[] {
 
 export function getAllColumns(filterProjectIds?: string[] | null): KanbanColumn[] {
 	const cols = db.select().from(kanbanColumns).orderBy(asc(kanbanColumns.position)).all();
-	let cards = db.select().from(kanbanCards).orderBy(asc(kanbanCards.position)).all();
+	let cardRows = db.select().from(kanbanCards).orderBy(asc(kanbanCards.position)).all();
 
 	if (filterProjectIds && filterProjectIds.length > 0) {
 		const allowed = new Set(filterProjectIds.filter(Boolean));
-		cards = cards.filter((c) => c.projectId && allowed.has(c.projectId));
+		cardRows = cardRows.filter((c) => c.projectId && allowed.has(c.projectId));
 	}
+
+	const allowedCardIds = new Set(cardRows.map((c) => c.id));
+	const reviewRows = db.select().from(kanbanCardReviews).orderBy(asc(kanbanCardReviews.createdAt)).all();
+	const reviewsByCard = new Map<string, KanbanCardReview[]>();
+	reviewRows.forEach((row) => {
+		if (!allowedCardIds.has(row.cardId)) return;
+		const review = parseReview(row);
+		const bucket = reviewsByCard.get(review.cardId) ?? [];
+		bucket.push(review);
+		reviewsByCard.set(review.cardId, bucket);
+	});
 
 	return cols.map((col) => ({
 		...col,
-		cards: cards.filter((c) => c.columnId === col.id).map(parseCard)
+		cards: cardRows
+			.filter((c) => c.columnId === col.id)
+			.map((row) => attachReviewData(parseCard(row), reviewsByCard))
 	}));
 }
 
@@ -82,7 +138,7 @@ export function createCard(columnId: string, title: string, tags: string[] = [],
 	};
 
 	db.insert(kanbanCards).values(row).run();
-	return parseCard(row);
+	return attachReviewData(parseCard(row), new Map());
 }
 
 export function moveCard(cardId: string, toColumnId: string, toPosition: number): void {
@@ -100,4 +156,19 @@ export function moveCard(cardId: string, toColumnId: string, toPosition: number)
 
 export function deleteCard(cardId: string): void {
 	db.delete(kanbanCards).where(eq(kanbanCards.id, cardId)).run();
+}
+
+export function addCardReview(cardId: string, comment: string, author?: string, type: string = 'review'): KanbanCardReview {
+	const id = crypto.randomUUID();
+	const now = new Date().toISOString();
+	const row = {
+		id,
+		cardId,
+		comment,
+		author: author || null,
+		type,
+		createdAt: now
+	};
+	db.insert(kanbanCardReviews).values(row).run();
+	return parseReview(row as typeof kanbanCardReviews.$inferSelect);
 }
