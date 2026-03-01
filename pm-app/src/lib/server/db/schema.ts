@@ -50,3 +50,12 @@ export const timelineItems = sqliteTable('timeline_items', {
 	category: text('category'),
 	createdAt: text('created_at').notNull()
 });
+
+export const ideaInsights = sqliteTable('idea_insights', {
+	id: text('id').primaryKey(),
+	ideaId: text('idea_id').notNull().references(() => ideas.id),
+	source: text('source').notNull().default('cron'),
+	rating: text('rating'),
+	summary: text('summary').notNull(),
+	createdAt: text('created_at').notNull()
+});

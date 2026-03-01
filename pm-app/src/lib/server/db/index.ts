@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 
-import { ideas, kanbanColumns, kanbanCards, kanbanCardReviews, timelineItems, projects } from './schema';
+import { ideas, ideaInsights, kanbanColumns, kanbanCards, kanbanCardReviews, timelineItems, projects } from './schema';
 
 function getDbFilePath(): string {
 	const override = process.env.TML_PM_DB;
@@ -31,6 +31,17 @@ sqlite.exec(`
 	);
 	CREATE INDEX IF NOT EXISTS ideas_done_idx ON ideas(done);
 	CREATE INDEX IF NOT EXISTS ideas_created_at_idx ON ideas(created_at);
+
+	CREATE TABLE IF NOT EXISTS idea_insights (
+		id TEXT PRIMARY KEY,
+		idea_id TEXT NOT NULL REFERENCES ideas(id),
+		source TEXT NOT NULL DEFAULT 'cron',
+		rating TEXT,
+		summary TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS idea_insights_idea_idx ON idea_insights(idea_id);
+	CREATE INDEX IF NOT EXISTS idea_insights_created_at_idx ON idea_insights(created_at);
 
 	CREATE TABLE IF NOT EXISTS kanban_columns (
 		id TEXT PRIMARY KEY,
@@ -108,4 +119,4 @@ try { sqlite.exec('ALTER TABLE kanban_cards ADD COLUMN description TEXT'); } cat
 try { sqlite.exec('ALTER TABLE kanban_cards ADD COLUMN project_id TEXT'); } catch {}
 
 export const db = drizzle(sqlite);
-export { ideas, kanbanColumns, kanbanCards, kanbanCardReviews, timelineItems, projects };
+export { ideas, ideaInsights, kanbanColumns, kanbanCards, kanbanCardReviews, timelineItems, projects };
