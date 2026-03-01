@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import { getIdeaRepository } from '$lib/server/ideas/repository';
+import { getAllProjects } from '$lib/server/kanban/repository';
 
 const repo = getIdeaRepository();
 
@@ -9,11 +10,31 @@ function shouldShowDone(url: URL): boolean {
 	return url.searchParams.get('showDone') === '1';
 }
 
+function getQuery(url: URL): string {
+	return url.searchParams.get('q')?.trim() ?? '';
+}
+
+function getProjectFilter(url: URL): string {
+	return url.searchParams.get('project')?.trim() ?? '';
+}
+
 export const load: PageServerLoad = async ({ url }) => {
 	const showDone = shouldShowDone(url);
-	const ideas = await repo.list({ includeDone: showDone });
+	const q = getQuery(url);
+	const project = getProjectFilter(url);
 
-	return { ideas, showDone };
+	// NOTE: Ideas are currently not linked to a project in the DB schema.
+	// We still surface the project filter UI (driven by Kanban projects) because
+	// upcoming cron/insights work will attach project signals to ideas.
+	let ideas = await repo.list({ includeDone: showDone });
+	if (q) {
+		const needle = q.toLowerCase();
+		ideas = ideas.filter((i) => (i.title + ' ' + (i.description ?? '')).toLowerCase().includes(needle));
+	}
+
+	const projects = getAllProjects().slice().sort((a, b) => a.name.localeCompare(b.name));
+
+	return { ideas, showDone, q, project, projects };
 };
 
 export const actions: Actions = {
@@ -53,4 +74,3 @@ export const actions: Actions = {
 		throw redirect(303, `${url.pathname}${url.search}`);
 	}
 };
-
