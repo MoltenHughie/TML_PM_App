@@ -37,24 +37,39 @@
 	<section class="panel highlight">
 		<div class="panelHeader">
 			<h2>Highlights</h2>
-			<p class="hint">(Preview) This section will show cron-flagged insights once the pipeline is wired.</p>
+			<p class="hint">Latest cron-generated insight summaries (most recent first).</p>
 		</div>
 
-		<div class="highlightsGrid">
+		{#if data.insights.length === 0}
 			<div class="highlightCard muted">
 				<h3>No insights yet</h3>
 				<p>
-					Next up: store cron summaries (timestamp/source/reason) and show them here alongside the linked idea.
+					Once cron jobs POST to <code>/api/idea-insights</code>, items will appear here.
 				</p>
 			</div>
-			<div class="highlightCard">
-				<h3>Quick filters</h3>
-				<p class="small">
-					Use the filters below to narrow ideas. Project filtering is UI-only for now until we attach project
-					signals to ideas.
-				</p>
-			</div>
-		</div>
+		{:else}
+			<ul class="insights">
+				{#each data.insights as ins (ins.id)}
+					{@const idea = data.ideas.find((i: PageData['ideas'][number]) => i.id === ins.ideaId)}
+					<li class="insight">
+						<div class="insightTop">
+							<div class="insightTitle">
+								<a href={`#idea-${ins.ideaId}`}>{idea?.title ?? `Idea ${ins.ideaId}`}</a>
+								{#if ins.rating}
+									<span class="badge rating">{ins.rating}</span>
+								{/if}
+							</div>
+							<div class="insightMeta">
+								<span>{new Date(ins.createdAt).toLocaleString()}</span>
+								<span class="dot">•</span>
+								<span>{ins.source}</span>
+							</div>
+						</div>
+						<p class="insightSummary">{ins.summary}</p>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 
 	<section class="panel">
@@ -141,7 +156,7 @@
 		{:else}
 			<ul class="ideas">
 				{#each data.ideas as idea (idea.id)}
-					<li class="idea {idea.done ? 'done' : ''}">
+					<li id={`idea-${idea.id}`} class="idea {idea.done ? 'done' : ''}">
 						<div class="meta">
 							<div class="titleRow">
 								<h3>{idea.title}</h3>
@@ -253,6 +268,67 @@
 		.highlightsGrid {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	.insights {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 10px;
+	}
+
+	.insight {
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		border-radius: 12px;
+		padding: 12px;
+		background: rgba(255, 255, 255, 0.92);
+	}
+
+	.insightTop {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+		align-items: baseline;
+	}
+
+	.insightTitle {
+		display: flex;
+		gap: 8px;
+		align-items: baseline;
+		flex-wrap: wrap;
+	}
+
+	.insightTitle a {
+		color: #2d3a8c;
+		text-decoration: none;
+		font-weight: 900;
+	}
+
+	.insightTitle a:hover {
+		text-decoration: underline;
+	}
+
+	.insightMeta {
+		color: #6b7280;
+		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+
+	.dot {
+		margin: 0 6px;
+	}
+
+	.insightSummary {
+		margin: 8px 0 0;
+		color: #374151;
+		white-space: pre-wrap;
+	}
+
+	.badge.rating {
+		background: rgba(59, 130, 246, 0.12);
+		border-color: rgba(59, 130, 246, 0.25);
+		color: #1e3a8a;
 	}
 
 	.highlightCard {

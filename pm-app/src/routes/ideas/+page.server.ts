@@ -2,9 +2,11 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import { getIdeaRepository } from '$lib/server/ideas/repository';
+import { getIdeaInsightRepository } from '$lib/server/ideas/insightsRepository';
 import { getAllProjects } from '$lib/server/kanban/repository';
 
 const repo = getIdeaRepository();
+const insightsRepo = getIdeaInsightRepository();
 
 function shouldShowDone(url: URL): boolean {
 	return url.searchParams.get('showDone') === '1';
@@ -34,7 +36,9 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	const projects = getAllProjects().slice().sort((a, b) => a.name.localeCompare(b.name));
 
-	return { ideas, showDone, q, project, projects };
+	const insights = await insightsRepo.list({ limit: 50 });
+
+	return { ideas, showDone, q, project, projects, insights };
 };
 
 export const actions: Actions = {
