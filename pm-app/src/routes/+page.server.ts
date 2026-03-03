@@ -21,12 +21,26 @@ async function loadSprintAndRotation(
 export const load: PageServerLoad = async ({ url, fetch }) => {
 	const projectFilters = url.searchParams.getAll('project').filter((v) => v && v.trim().length > 0);
 	const { sprint, rotation } = await loadSprintAndRotation(fetch, projectFilters[0] ?? null);
+
+	let plannedToday: { id: string; title: string; projectId: string }[] = [];
+	try {
+		// Cron writes this file on the machine running the PM app.
+		// If missing, we simply don't show the panel.
+		const fs = await import('node:fs/promises');
+		const raw = await fs.readFile('/Users/tlittau/clawd/memory/pm-app/state.json', 'utf-8');
+		const state = JSON.parse(raw);
+		plannedToday = Array.isArray(state?.planned_cards) ? state.planned_cards : [];
+	} catch {
+		plannedToday = [];
+	}
+
 	return {
 		columns: getAllColumns(projectFilters),
 		projects: getAllProjects(),
 		selectedProjects: projectFilters,
 		sprint,
-		rotation
+		rotation,
+		plannedToday
 	};
 };
 

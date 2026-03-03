@@ -45,6 +45,7 @@
     let projects = $derived(data.projects as Project[]);
     let selectedProjects = $derived(((data.selectedProjects as string[] | undefined) ?? []) as string[]);
     let selectedProjectsSet = $derived(new Set(selectedProjects));
+    let plannedToday = $derived(((data as any).plannedToday as { id: string; title: string; projectId: string }[] | undefined) ?? []);
     let dragging: { card: Card; fromColumnId: string } | null = $state(null);
     let addingTo: string | null = $state(null);
     let selectedCard: Card | null = $state(null);
@@ -194,6 +195,33 @@
     </div>
 
     <RotationStatus {rotation} />
+
+    {#if plannedToday.length}
+        <aside class="plannedToday" aria-label="Planned today">
+            <div class="plannedHead">
+                <h3>🗓️ Planned today</h3>
+                <span class="plannedCount">{plannedToday.length}</span>
+            </div>
+            <ul>
+                {#each plannedToday as c (c.id)}
+                    <li>
+                        <button
+                            type="button"
+                            class="plannedItem"
+                            title={c.title}
+                            onclick={() => {
+                                const el = document.getElementById(c.id);
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                        >
+                            <span class="plannedTitle">{c.title}</span>
+                        </button>
+                    </li>
+                {/each}
+            </ul>
+        </aside>
+    {/if}
+
     <SprintFocus {sprint} projectName={activeProjectName} />
 
     <section class="board">
@@ -230,7 +258,7 @@
                                 }
                             }}
                         >
-                            <div class="cardTop">
+                            <div id={card.id} class="cardTop">
                                 <div class="title">{card.title}</div>
                                 <form method="POST" action="?/delete" use:enhance>
                                     <input type="hidden" name="cardId" value={card.id} />
@@ -506,6 +534,67 @@
         border-radius: 50%;
         display: inline-block;
         border: 2px solid transparent;
+    }
+
+    .plannedToday {
+        margin-top: 1.25rem;
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 16px;
+        padding: 14px 14px 10px;
+    }
+
+    .plannedHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .plannedHead h3 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .plannedCount {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #cbd5f5;
+        background: rgba(226, 232, 240, 0.1);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 2px 10px;
+        border-radius: 999px;
+    }
+
+    .plannedToday ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 6px;
+    }
+
+    .plannedItem {
+        width: 100%;
+        text-align: left;
+        background: rgba(226, 232, 240, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        color: #e2e8f0;
+        padding: 8px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .plannedItem:hover {
+        border-color: rgba(149, 196, 253, 0.7);
+    }
+
+    .plannedTitle {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .board {
