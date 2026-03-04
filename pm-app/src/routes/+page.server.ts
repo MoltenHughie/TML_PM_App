@@ -1,6 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { getAllColumns, getAllProjects, createCard, moveCard, deleteCard, addCardReview } from '$lib/server/kanban/repository';
 import { fail } from '@sveltejs/kit';
+import * as fs from 'node:fs/promises';
 
 async function loadSprintAndRotation(
 	fetchFn: typeof fetch,
@@ -26,7 +27,6 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
 	try {
 		// Cron writes this file on the machine running the PM app.
 		// If missing, we simply don't show the panel.
-		const fs = await import('node:fs/promises');
 		const raw = await fs.readFile('/Users/tlittau/clawd/memory/pm-app/state.json', 'utf-8');
 		const state = JSON.parse(raw);
 		plannedToday = Array.isArray(state?.planned_cards) ? state.planned_cards : [];
@@ -73,6 +73,24 @@ export const actions: Actions = {
 		}
 
 		moveCard(cardId, toColumnId, toPosition);
+		return { success: true };
+	},
+
+	start: async ({ request }) => {
+		const data = await request.formData();
+		const cardId = data.get('cardId')?.toString()?.trim();
+		if (!cardId) return fail(400, { error: 'Missing cardId.' });
+
+		const statePath = '/Users/tlittau/clawd/memory/pm-app/state.json';
+		try {
+			const raw = await fs.readFile(statePath, 'utf-8');
+			const state = JSON.parse(raw);
+			state.active_card_id = cardId;
+			await fs.writeFile(statePath, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+		} catch (err) {
+			return fail(500, { error: `Failed to update state.json: ${String(err)}` });
+		}
+
 		return { success: true };
 	},
 

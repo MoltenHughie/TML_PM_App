@@ -205,17 +205,36 @@
             <ul>
                 {#each plannedToday as c (c.id)}
                     <li>
-                        <button
-                            type="button"
-                            class="plannedItem"
-                            title={c.title}
-                            onclick={() => {
-                                const el = document.getElementById(c.id);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }}
-                        >
-                            <span class="plannedTitle">{c.title}</span>
-                        </button>
+                        <div class="plannedRow">
+                            <button
+                                type="button"
+                                class="plannedItem"
+                                title={c.title}
+                                onclick={() => {
+                                    const el = document.getElementById(c.id);
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }}
+                            >
+                                <span class="plannedTitle">{c.title}</span>
+                            </button>
+
+                            <form method="POST" action="?/start" use:enhance>
+                                <input type="hidden" name="cardId" value={c.id} />
+                                <button type="submit" class="startBtn" title="Mark as started">Start</button>
+                            </form>
+
+                            <button
+                                type="button"
+                                class="openBtn"
+                                title="Jump to card"
+                                onclick={() => {
+                                    const el = document.getElementById(c.id);
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }}
+                            >
+                                Open
+                            </button>
+                        </div>
                     </li>
                 {/each}
             </ul>
@@ -574,6 +593,13 @@
         gap: 6px;
     }
 
+    .plannedRow {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        align-items: center;
+    }
+
     .plannedItem {
         width: 100%;
         text-align: left;
@@ -588,6 +614,27 @@
 
     .plannedItem:hover {
         border-color: rgba(149, 196, 253, 0.7);
+    }
+
+    .startBtn,
+    .openBtn {
+        font-size: 0.8rem;
+        padding: 7px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(226, 232, 240, 0.08);
+        color: #e2e8f0;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .startBtn:hover,
+    .openBtn:hover {
+        border-color: rgba(149, 196, 253, 0.7);
+    }
+
+    .startBtn {
+        font-weight: 700;
     }
 
     .plannedTitle {
